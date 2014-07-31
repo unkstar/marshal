@@ -1,0 +1,58 @@
+PACKAGE DOCUMENTATION
+
+package marshal
+    import "gitlab.yypm.com/marshal"
+
+    Package marshal provide binary encoding method similar to
+    encoding/binary except it support varibale length string and array array
+    and string length format is defined by LengthType and ByteOrder This
+    package depends on encoding/binary.ByteOrder
+
+
+FUNCTIONS
+
+func Marshal(v interface{}, w io.Writer, order binary.ByteOrder, length LengthType) (err error)
+    Marshal put binary presentation of v into w. Bytes written to w are
+    encoded using specified byte order and length type
+
+func Unmarshal(m interface{}, r io.Reader, order binary.ByteOrder, length LengthType) (err error)
+    Unmarshal read binary presentation of data from r into m. Bytes read
+    from r must be encoded using specified byte order and length type. When
+    reading into struct, all non-blank field must be exported
+
+
+TYPES
+
+type LengthType func() LengthTypeInstance
+    Function to create LengthTypeInstance, see BlobLength64 for detail
+
+
+
+type LengthTypeInstance interface {
+    Length(io.Reader, binary.ByteOrder) int
+    PutLength(io.Writer, binary.ByteOrder, int)
+}
+    LengthTypeInstance let you define a new length format, you can put
+    instance-wise buffer in each instance to speed up and avoid GCs
+
+
+func BlobLength16() LengthTypeInstance
+    BlobLength16 array and string length is present with 16 bit word
+
+
+func BlobLength32() LengthTypeInstance
+    BlobLength32 array and string length is present with 32 bit word
+
+
+func BlobLength64() LengthTypeInstance
+    BlobLength64 array and string length is present with 64 bit word
+
+
+func BlobLength8() LengthTypeInstance
+    BlobLength8 array and string length is present with 8 bit word
+
+
+func CompactLength() LengthTypeInstance
+    CompactLength provide compact length in Tight-VNC encoding
+
+This document is generate from source code with godoc, DO NOT EDIT directly!
