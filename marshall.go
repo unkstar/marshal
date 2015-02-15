@@ -297,6 +297,12 @@ func (m *marshaler) marshal(v reflect.Value, length LengthTypeInstance) {
         m.marshal(v.Index(i), length)
       }
     }
+  case reflect.Bool:
+    if v.Bool() {
+      m.uint8(1)
+    } else {
+      m.uint8(0)
+    }
   case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
     switch v.Type().Kind() {
     case reflect.Int8:
@@ -435,6 +441,8 @@ func (u *unmarshaler) unmarshal(v reflect.Value, order binary.ByteOrder, length 
         }
       }
     }
+	case reflect.Bool:
+		v.SetBool(u.fetch(1)[0] != 0)
 	case reflect.Int8:
 		v.SetInt(int64(u.fetch(1)[0]))
 	case reflect.Int16:

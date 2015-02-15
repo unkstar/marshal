@@ -23,7 +23,8 @@ type Foo struct {
   SessionId uint32
   Serial    uint32
   Tick      uint32
-  Bar      bar
+  Bar       bar
+  OK        bool
 }
 
 type Pod struct {
@@ -90,6 +91,7 @@ var s_foo = Foo{
       "ghi":3,
     },
   },
+  OK:true,
 }
 
 func BenchmarkMarshal(b *testing.B){
