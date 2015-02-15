@@ -283,7 +283,9 @@ func (m *marshaler) marshal(v reflect.Value, length LengthTypeInstance) {
     }
   case reflect.Array, reflect.Slice:
     l := v.Len()
-    length.PutLength(m.w, m.order, l)
+    if v.Kind() == reflect.Slice {
+      length.PutLength(m.w, m.order, l)
+    }
     kind := v.Type().Elem().Kind()
     if kind == reflect.Uint8 || kind == reflect.Int8 {
       //fast path for []byte
@@ -412,7 +414,12 @@ func (u *unmarshaler) unmarshal(v reflect.Value, order binary.ByteOrder, length 
       }
     }
   case reflect.Array, reflect.Slice:
-    l := length.Length(u.r, order)
+    var l int
+    if reflect.Slice == v.Kind() {
+      l = length.Length(u.r, order)
+    } else {
+      l = v.Len()
+    }
     if l != 0 {
       if v.Kind() == reflect.Slice {
         v.Set(reflect.MakeSlice(v.Type(), l, l))
