@@ -7,6 +7,7 @@ package marshal
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"reflect"
@@ -50,6 +51,34 @@ func (d *blobLength64) Length(r io.Reader, order binary.ByteOrder) int {
 	return int(order.Uint64(bs))
 }
 
+type bound64 struct {
+	length blobLength64
+	bound  int
+}
+
+func Bound64(bound int) LengthType {
+	return func() LengthTypeInstance {
+		return &bound64{
+			bound: bound,
+		}
+	}
+}
+
+func (d *bound64) Length(r io.Reader, order binary.ByteOrder) int {
+	l := d.length.Length(r, order)
+	if l > d.bound {
+		panic(fmt.Errorf("bound length overflow: %d > %d", l, d.bound))
+	}
+	return l
+}
+
+func (d *bound64) PutLength(w io.Writer, order binary.ByteOrder, v int) {
+	if v > d.bound {
+		panic(fmt.Errorf("bound length overflow: %d > %d", v, d.bound))
+	}
+	d.length.PutLength(w, order, v)
+}
+
 //BlobLength32 array and string length is present with 32 bit word
 func BlobLength32() LengthTypeInstance {
 	return &blobLength32{}
@@ -76,6 +105,34 @@ func (d *blobLength32) Length(r io.Reader, order binary.ByteOrder) int {
 		panic(err)
 	}
 	return int(order.Uint32(bs))
+}
+
+type bound32 struct {
+	length blobLength32
+	bound  int
+}
+
+func Bound32(bound int) LengthType {
+	return func() LengthTypeInstance {
+		return &bound32{
+			bound: bound,
+		}
+	}
+}
+
+func (d *bound32) Length(r io.Reader, order binary.ByteOrder) int {
+	l := d.length.Length(r, order)
+	if l > d.bound {
+		panic(fmt.Errorf("bound length overflow: %d > %d", l, d.bound))
+	}
+	return l
+}
+
+func (d *bound32) PutLength(w io.Writer, order binary.ByteOrder, v int) {
+	if v > d.bound {
+		panic(fmt.Errorf("bound length overflow: %d > %d", v, d.bound))
+	}
+	d.length.PutLength(w, order, v)
 }
 
 //BlobLength16 array and string length is present with 16 bit word

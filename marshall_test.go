@@ -53,7 +53,7 @@ func benchmarkPod() {
 func BenchmarkBinary(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 2; j++ {
-			for k := 0; k < 5; k++ {
+			for k := 0; k < 7; k++ {
 				benchmarkPod()
 			}
 		}
@@ -62,11 +62,70 @@ func BenchmarkBinary(b *testing.B) {
 
 func TestMarshal(t *testing.T) {
 	orders := []binary.ByteOrder{binary.LittleEndian, binary.BigEndian}
-	lengths := []LengthType{BlobLength8, BlobLength16, BlobLength32, BlobLength64, CompactLength}
+	lengths := []LengthType{BlobLength8, BlobLength16, BlobLength32, BlobLength64, CompactLength, Bound64(0xFFFFFFFF), Bound32(0xFFFFFFFF)}
 	for _, o := range orders {
 		for _, l := range lengths {
 			testCombination(t, o, l)
 		}
+	}
+}
+
+func TestBound(t *testing.T) {
+	orders := []binary.ByteOrder{binary.LittleEndian, binary.BigEndian}
+	lengths := []LengthType{Bound64(1), Bound32(1)}
+	sourceLength := []LengthType{BlobLength64, BlobLength32}
+	for _, o := range orders {
+		for i, l := range lengths {
+			testBoundMarshal(t, o, l)
+			testBoundUnmarshal(t, o, l, sourceLength[i])
+		}
+	}
+}
+
+func testBoundUnmarshal(t *testing.T, order binary.ByteOrder, length LengthType, srcLength LengthType) {
+	t.Logf("order:%s, length:%s", reflect.TypeOf(order).Name(), reflect.TypeOf(length).Name())
+	// iterate through the attributes of a Data Model instance
+	result := new(bytes.Buffer)
+	proto := createTestObject()
+
+	//binary.Write(result, binary.LittleEndian, &proto)
+	if testing.Verbose() {
+		DeepPrint(proto, t)
+	}
+
+	e := Marshal(proto, result, order, srcLength)
+	if e != nil {
+		t.Error("error: %v\n", e)
+	}
+
+	//buf := result.Bytes()
+	t.Logf("result len: %d\n", result.Len())
+	//for i, _ := range buf {
+	//t.Logf("0x%x,", buf[i:i+1])
+	//}
+	t.Logf("%x\n", result)
+
+	var readBack Foo
+	err := Unmarshal(&readBack, bytes.NewReader(result.Bytes()), order, length)
+	if err == nil {
+		t.Error("error: bound unmarshal test failed\n", err)
+	}
+}
+
+func testBoundMarshal(t *testing.T, order binary.ByteOrder, length LengthType) {
+	t.Logf("order:%s, length:%s", reflect.TypeOf(order).Name(), reflect.TypeOf(length).Name())
+	// iterate through the attributes of a Data Model instance
+	result := new(bytes.Buffer)
+	proto := createTestObject()
+
+	//binary.Write(result, binary.LittleEndian, &proto)
+	if testing.Verbose() {
+		DeepPrint(proto, t)
+	}
+
+	e := Marshal(proto, result, order, length)
+	if e == nil {
+		t.Error("error: bound marshal test failed\n", e)
 	}
 }
 
@@ -96,7 +155,7 @@ var s_foo = Foo{
 
 func BenchmarkMarshal(b *testing.B) {
 	orders := []binary.ByteOrder{binary.LittleEndian, binary.BigEndian}
-	lengths := []LengthType{BlobLength8, BlobLength16, BlobLength32, BlobLength64, CompactLength}
+	lengths := []LengthType{BlobLength8, BlobLength16, BlobLength32, BlobLength64, CompactLength, Bound64(0xFFFFFFFF), Bound32(0xFFFFFFFF)}
 	for i := 0; i < b.N; i++ {
 		for _, o := range orders {
 			for _, l := range lengths {
