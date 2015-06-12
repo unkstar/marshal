@@ -53,7 +53,7 @@ func benchmarkPod() {
 func BenchmarkBinary(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < 2; j++ {
-			for k := 0; k < 7; k++ {
+			for k := 0; k < 8; k++ {
 				benchmarkPod()
 			}
 		}
@@ -62,7 +62,7 @@ func BenchmarkBinary(b *testing.B) {
 
 func TestMarshal(t *testing.T) {
 	orders := []binary.ByteOrder{binary.LittleEndian, binary.BigEndian}
-	lengths := []LengthType{BlobLength8, BlobLength16, BlobLength32, BlobLength64, CompactLength, Bound64(0xFFFFFFFF), Bound32(0xFFFFFFFF)}
+	lengths := []LengthType{BlobLength8, BlobLength16, BlobLength32, BlobLength64, CompactLength, Bound64(0xFFFFFFFF), Bound32(0xFFFFFFFF), YYBlobType}
 	for _, o := range orders {
 		for _, l := range lengths {
 			testCombination(t, o, l)
@@ -155,7 +155,7 @@ var s_foo = Foo{
 
 func BenchmarkMarshal(b *testing.B) {
 	orders := []binary.ByteOrder{binary.LittleEndian, binary.BigEndian}
-	lengths := []LengthType{BlobLength8, BlobLength16, BlobLength32, BlobLength64, CompactLength, Bound64(0xFFFFFFFF), Bound32(0xFFFFFFFF)}
+	lengths := []LengthType{BlobLength8, BlobLength16, BlobLength32, BlobLength64, CompactLength, Bound64(0xFFFFFFFF), Bound32(0xFFFFFFFF), YYBlobType}
 	for i := 0; i < b.N; i++ {
 		for _, o := range orders {
 			for _, l := range lengths {

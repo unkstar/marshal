@@ -16,8 +16,8 @@ import (
 //LengthTypeInstance let you define a new length format,
 //you can put instance-wise buffer in each instance to speed up and avoid GCs
 type LengthTypeInstance interface {
-	Length(io.Reader, binary.ByteOrder) int
-	PutLength(io.Writer, binary.ByteOrder, int)
+	Length(io.Reader, binary.ByteOrder, reflect.Kind) int
+	PutLength(io.Writer, binary.ByteOrder, reflect.Kind, int)
 }
 
 //Function to create LengthTypeInstance, see BlobLength64 for detail
@@ -32,7 +32,7 @@ type blobLength64 struct {
 	b [8]byte
 }
 
-func (d *blobLength64) PutLength(w io.Writer, order binary.ByteOrder, v int) {
+func (d *blobLength64) PutLength(w io.Writer, order binary.ByteOrder, k reflect.Kind, v int) {
 	var bs []byte
 	bs = d.b[:8]
 	order.PutUint64(bs, uint64(v))
@@ -42,7 +42,7 @@ func (d *blobLength64) PutLength(w io.Writer, order binary.ByteOrder, v int) {
 	}
 }
 
-func (d *blobLength64) Length(r io.Reader, order binary.ByteOrder) int {
+func (d *blobLength64) Length(r io.Reader, order binary.ByteOrder, k reflect.Kind) int {
 	var bs []byte
 	bs = d.b[:8]
 	if _, err := io.ReadFull(r, bs); err != nil {
@@ -64,19 +64,19 @@ func Bound64(bound int) LengthType {
 	}
 }
 
-func (d *bound64) Length(r io.Reader, order binary.ByteOrder) int {
-	l := d.length.Length(r, order)
+func (d *bound64) Length(r io.Reader, order binary.ByteOrder, k reflect.Kind) int {
+	l := d.length.Length(r, order, k)
 	if l > d.bound {
 		panic(fmt.Errorf("bound length overflow: %d > %d", l, d.bound))
 	}
 	return l
 }
 
-func (d *bound64) PutLength(w io.Writer, order binary.ByteOrder, v int) {
+func (d *bound64) PutLength(w io.Writer, order binary.ByteOrder, k reflect.Kind, v int) {
 	if v > d.bound {
 		panic(fmt.Errorf("bound length overflow: %d > %d", v, d.bound))
 	}
-	d.length.PutLength(w, order, v)
+	d.length.PutLength(w, order, k, v)
 }
 
 //BlobLength32 array and string length is present with 32 bit word
@@ -88,7 +88,7 @@ type blobLength32 struct {
 	b [4]byte
 }
 
-func (d *blobLength32) PutLength(w io.Writer, order binary.ByteOrder, v int) {
+func (d *blobLength32) PutLength(w io.Writer, order binary.ByteOrder, k reflect.Kind, v int) {
 	var bs []byte
 	bs = d.b[:4]
 	order.PutUint32(bs, uint32(v))
@@ -98,7 +98,7 @@ func (d *blobLength32) PutLength(w io.Writer, order binary.ByteOrder, v int) {
 	}
 }
 
-func (d *blobLength32) Length(r io.Reader, order binary.ByteOrder) int {
+func (d *blobLength32) Length(r io.Reader, order binary.ByteOrder, k reflect.Kind) int {
 	var bs []byte
 	bs = d.b[:4]
 	if _, err := io.ReadFull(r, bs); err != nil {
@@ -120,19 +120,19 @@ func Bound32(bound int) LengthType {
 	}
 }
 
-func (d *bound32) Length(r io.Reader, order binary.ByteOrder) int {
-	l := d.length.Length(r, order)
+func (d *bound32) Length(r io.Reader, order binary.ByteOrder, k reflect.Kind) int {
+	l := d.length.Length(r, order, k)
 	if l > d.bound {
 		panic(fmt.Errorf("bound length overflow: %d > %d", l, d.bound))
 	}
 	return l
 }
 
-func (d *bound32) PutLength(w io.Writer, order binary.ByteOrder, v int) {
+func (d *bound32) PutLength(w io.Writer, order binary.ByteOrder, k reflect.Kind, v int) {
 	if v > d.bound {
 		panic(fmt.Errorf("bound length overflow: %d > %d", v, d.bound))
 	}
-	d.length.PutLength(w, order, v)
+	d.length.PutLength(w, order, k, v)
 }
 
 //BlobLength16 array and string length is present with 16 bit word
@@ -144,7 +144,7 @@ type blobLength16 struct {
 	b [2]byte
 }
 
-func (d *blobLength16) PutLength(w io.Writer, order binary.ByteOrder, v int) {
+func (d *blobLength16) PutLength(w io.Writer, order binary.ByteOrder, k reflect.Kind, v int) {
 	var bs []byte
 	bs = d.b[:2]
 	order.PutUint16(bs, uint16(v))
@@ -154,7 +154,7 @@ func (d *blobLength16) PutLength(w io.Writer, order binary.ByteOrder, v int) {
 	}
 }
 
-func (d *blobLength16) Length(r io.Reader, order binary.ByteOrder) int {
+func (d *blobLength16) Length(r io.Reader, order binary.ByteOrder, k reflect.Kind) int {
 	var bs []byte
 	bs = d.b[:2]
 	if _, err := io.ReadFull(r, bs); err != nil {
@@ -172,7 +172,7 @@ type blobLength8 struct {
 	b [1]byte
 }
 
-func (d *blobLength8) PutLength(w io.Writer, order binary.ByteOrder, v int) {
+func (d *blobLength8) PutLength(w io.Writer, order binary.ByteOrder, k reflect.Kind, v int) {
 	var bs []byte
 	bs = d.b[:1]
 	bs[0] = uint8(v)
@@ -182,7 +182,7 @@ func (d *blobLength8) PutLength(w io.Writer, order binary.ByteOrder, v int) {
 	}
 }
 
-func (d *blobLength8) Length(r io.Reader, order binary.ByteOrder) int {
+func (d *blobLength8) Length(r io.Reader, order binary.ByteOrder, k reflect.Kind) int {
 	var bs []byte
 	bs = d.b[:1]
 	if _, err := io.ReadFull(r, bs); err != nil {
@@ -200,7 +200,7 @@ type compactLength struct {
 	b [3]byte
 }
 
-func (d *compactLength) PutLength(w io.Writer, order binary.ByteOrder, v int) {
+func (d *compactLength) PutLength(w io.Writer, order binary.ByteOrder, k reflect.Kind, v int) {
 	var bs []byte
 	d.b[0] = byte(v & 0x7f)
 	if v > 0x7f {
@@ -226,7 +226,7 @@ func (d *compactLength) PutLength(w io.Writer, order binary.ByteOrder, v int) {
 	}
 }
 
-func (d *compactLength) Length(r io.Reader, order binary.ByteOrder) int {
+func (d *compactLength) Length(r io.Reader, order binary.ByteOrder, k reflect.Kind) int {
 	bs := d.b[:1]
 	var v int
 	if _, err := io.ReadFull(r, bs); err != nil {
@@ -246,6 +246,42 @@ func (d *compactLength) Length(r io.Reader, order binary.ByteOrder) int {
 		}
 	}
 	return v
+}
+
+//errrrr...
+type YYBlobTypeInstance struct {
+	length blobLength32
+}
+
+func YYBlobType() LengthTypeInstance {
+	return &YYBlobTypeInstance{}
+}
+
+func (d *YYBlobTypeInstance) Length(r io.Reader, order binary.ByteOrder, k reflect.Kind) int {
+	if k != reflect.String {
+		return d.length.Length(r, order, k)
+	} else {
+		var bs []byte
+		bs = d.length.b[:2]
+		if _, err := io.ReadFull(r, bs); err != nil {
+			panic(err)
+		}
+		return int(order.Uint16(bs))
+	}
+}
+
+func (d *YYBlobTypeInstance) PutLength(w io.Writer, order binary.ByteOrder, k reflect.Kind, v int) {
+	if k != reflect.String {
+		d.length.PutLength(w, order, k, v)
+	} else {
+		var bs []byte
+		bs = d.length.b[:2]
+		order.PutUint16(bs, uint16(v))
+		_, err := w.Write(bs)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 type marshaler struct {
@@ -313,10 +349,11 @@ func (m *marshaler) marshal(v reflect.Value, length LengthTypeInstance) {
 	for v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	switch v.Kind() {
+	kind := v.Kind()
+	switch kind {
 	case reflect.String:
 		l := v.Len()
-		length.PutLength(m.w, m.order, l)
+		length.PutLength(m.w, m.order, kind, l)
 		if l != 0 {
 			if _, e := m.w.Write([]byte(v.String())); nil != e {
 				panic(e)
@@ -329,7 +366,7 @@ func (m *marshaler) marshal(v reflect.Value, length LengthTypeInstance) {
 		}
 	case reflect.Map:
 		l := v.Len()
-		length.PutLength(m.w, m.order, l)
+		length.PutLength(m.w, m.order, kind, l)
 		keys := v.MapKeys()
 		for i := 0; i < l; i++ {
 			m.marshal(keys[i], length)
@@ -338,7 +375,7 @@ func (m *marshaler) marshal(v reflect.Value, length LengthTypeInstance) {
 	case reflect.Array, reflect.Slice:
 		l := v.Len()
 		if v.Kind() == reflect.Slice {
-			length.PutLength(m.w, m.order, l)
+			length.PutLength(m.w, m.order, kind, l)
 		}
 		kind := v.Type().Elem().Kind()
 		if kind == reflect.Uint8 || kind == reflect.Int8 {
@@ -444,9 +481,10 @@ func (u *unmarshaler) fetch(b int) (bs []byte) {
 }
 
 func (u *unmarshaler) unmarshal(v reflect.Value, order binary.ByteOrder, length LengthTypeInstance) {
-	switch v.Kind() {
+	kind := v.Kind()
+	switch kind {
 	case reflect.String:
-		l := length.Length(u.r, order)
+		l := length.Length(u.r, order, kind)
 		if l != 0 {
 			bs := make([]byte, l)
 			if _, e := io.ReadFull(u.r, bs); e != nil {
@@ -460,7 +498,7 @@ func (u *unmarshaler) unmarshal(v reflect.Value, order binary.ByteOrder, length 
 			u.unmarshal(v.Field(i), order, length)
 		}
 	case reflect.Map:
-		l := length.Length(u.r, order)
+		l := length.Length(u.r, order, kind)
 		if l != 0 {
 			v.Set(reflect.MakeMap(v.Type()))
 			keyType := v.Type().Key()
@@ -476,7 +514,7 @@ func (u *unmarshaler) unmarshal(v reflect.Value, order binary.ByteOrder, length 
 	case reflect.Array, reflect.Slice:
 		var l int
 		if reflect.Slice == v.Kind() {
-			l = length.Length(u.r, order)
+			l = length.Length(u.r, order, kind)
 		} else {
 			l = v.Len()
 		}
